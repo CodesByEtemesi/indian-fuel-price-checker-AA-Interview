@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fuel Prices by State - India</title>
+  <style>
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #fuel-output {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Select an Indian State to View Fuel Prices</h2>
+  <div id="states">Loading states...</div>
+  <div id="fuel-output"></div>
+
+  <script>
+    const headers = {
+      "X-RapidAPI-Key": "afbfb12c0fmshd62efef13cd2ffap1bcdeajsn30ded9a0b65b",
+      "X-RapidAPI-Host": "daily-petrol-diesel-lpg-cng-fuel-prices-in-india.p.rapidapi.com"
+    };
+
+    const STATES_API = "https://daily-petrol-diesel-lpg-cng-fuel-prices-in-india.p.rapidapi.com/v1/list/india/states";
+    const FUEL_API_BASE = "https://daily-petrol-diesel-lpg-cng-fuel-prices-in-india.p.rapidapi.com/v1/fuel-prices/today/india/";
+
+    const statesContainer = document.getElementById("states");
+    const output = document.getElementById("fuel-output");
+
+    // Fetch list of states
+    fetch(STATES_API, { headers })
+      .then(res => res.json())
+      .then(data => {
+        statesContainer.innerHTML = "";
+        const states = data?.states || [];
+
+        if (states.length === 0) {
+          statesContainer.textContent = "No states found.";
+          return;
+        }
+
+        states.forEach(({ stateId, stateName }) => {
+          const btn = document.createElement("button");
+          btn.innerText = stateName;
+          btn.onclick = () => fetchFuelPrice(stateId, stateName);
+          statesContainer.appendChild(btn);
+        });
+      })
+      .catch(error => {
+        statesContainer.textContent = "Failed to load states.";
+        console.error("Error loading states:", error);
+      });
+
+    // Fetch fuel price for a state
+    function fetchFuelPrice(stateId, stateName) {
+      output.textContent = "Loading fuel prices...";
+
+      const url = FUEL_API_BASE + encodeURIComponent(stateId);
+
+      fetch(url, { headers })
+        .then(res => res.json())
+        .then(data => {
+          const fuelData = data?.fuel || {};
+
+          if (!fuelData || Object.keys(fuelData).length === 0) {
+            output.innerHTML = `No fuel data available for ${stateName}.`;
+            return;
+          }
+
+          output.innerHTML = `
+            <strong>Fuel Prices in ${stateName}:</strong><br>
+            Petrol: ₹${fuelData.petrol?.price || "N/A"}<br>
+            Diesel: ₹${fuelData.diesel?.price || "N/A"}<br>
+            CNG: ₹${fuelData.cng?.price || "N/A"}<br>
+            LPG: ₹${fuelData.lpg?.price || "N/A"}
+          `;
+        })
+        .catch(error => {
+          output.innerHTML = `Error fetching fuel prices for ${stateName}`;
+          console.error("Error loading fuel data:", error);
+        });
+    }
+  </script>
+</body>
+</html>
